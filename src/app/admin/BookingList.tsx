@@ -16,11 +16,11 @@ function fmt12(time: string) {
 }
 
 function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id: string) => void }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"done" | "cancel" | null>(null);
   const [amount, setAmount] = useState(String(booking.amount_paid ?? getDefaultPrice(booking.service_id)));
 
   async function markDone() {
-    setLoading(true);
+    setLoading("done");
     await fetch(`/api/admin/bookings/${booking.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -29,7 +29,18 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
         amount_paid: amount ? parseFloat(amount) : null,
       }),
     });
-    setLoading(false);
+    setLoading(null);
+    onComplete(booking.id);
+  }
+
+  async function markCancelled() {
+    setLoading("cancel");
+    await fetch(`/api/admin/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "cancelled", amount_paid: null }),
+    });
+    setLoading(null);
     onComplete(booking.id);
   }
 
@@ -75,7 +86,7 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
         </div>
         <button
           onClick={markDone}
-          disabled={loading}
+          disabled={loading !== null}
           style={{
             background: "transparent",
             border: "1px solid #22c55e",
@@ -88,7 +99,24 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
             whiteSpace: "nowrap",
           }}
         >
-          {loading ? "…" : "✓ Done"}
+          {loading === "done" ? "…" : "✓ Done"}
+        </button>
+        <button
+          onClick={markCancelled}
+          disabled={loading !== null}
+          style={{
+            background: "transparent",
+            border: "1px solid #ef4444",
+            color: "#ef4444",
+            borderRadius: 6,
+            padding: "5px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: loading ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {loading === "cancel" ? "…" : "✕ Cancel"}
         </button>
       </div>
     </div>
