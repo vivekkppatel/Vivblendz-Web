@@ -189,12 +189,6 @@ export default async function Home() {
               </div>
             ); })}
           </div>
-          <p className="condensed mt-6" style={{ color: "var(--muted)", fontSize: 13 }}>
-            {settings.address}
-          </p>
-          <p className="condensed mt-1" style={{ color: "var(--muted)", fontSize: 13 }}>
-            {settings.phone}
-          </p>
         </div>
 
         {/* Instagram */}
