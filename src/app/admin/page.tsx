@@ -35,10 +35,10 @@ export default async function AdminPage() {
 
   const [bookings, settings] = await Promise.all([getBookings(), getShopSettings()]);
 
-  const today = bookings.filter(b => isToday(parseISO(b.date)));
+  const today = bookings.filter(b => b.status === "confirmed" && isToday(parseISO(b.date)));
   const upcoming = bookings.filter(b => {
     const d = parseISO(b.date);
-    return isFuture(d) && !isToday(d);
+    return b.status === "confirmed" && isFuture(d) && !isToday(d);
   });
   const revenue = bookings
     .filter(b => b.status === "completed")

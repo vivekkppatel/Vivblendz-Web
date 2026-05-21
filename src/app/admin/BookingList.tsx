@@ -12,7 +12,6 @@ function fmt12(time: string) {
 
 function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id: string) => void }) {
   const [loading, setLoading] = useState(false);
-  const done = booking.status === "completed";
 
   async function markDone() {
     setLoading(true);
@@ -28,10 +27,8 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
   return (
     <div
       style={{
-        background: done ? "transparent" : "var(--surface)",
+        background: "var(--surface)",
         borderBottom: "1px solid var(--border)",
-        opacity: done ? 0.5 : 1,
-        transition: "opacity 0.2s",
       }}
       className="p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6"
     >
@@ -56,27 +53,23 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
             {booking.duration_minutes} min
           </p>
         </div>
-        {done ? (
-          <span style={{ color: "#22c55e", fontSize: 20 }}>✓</span>
-        ) : (
-          <button
-            onClick={markDone}
-            disabled={loading}
-            style={{
-              background: "transparent",
-              border: "1px solid #22c55e",
-              color: "#22c55e",
-              borderRadius: 6,
-              padding: "5px 12px",
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {loading ? "…" : "✓ Done"}
-          </button>
-        )}
+        <button
+          onClick={markDone}
+          disabled={loading}
+          style={{
+            background: "transparent",
+            border: "1px solid #22c55e",
+            color: "#22c55e",
+            borderRadius: 6,
+            padding: "5px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: loading ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {loading ? "…" : "✓ Done"}
+        </button>
       </div>
     </div>
   );
@@ -86,20 +79,14 @@ export default function BookingList({ initialBookings }: { initialBookings: Book
   const [bookings, setBookings] = useState(initialBookings);
 
   function markComplete(id: string) {
-    setBookings(bs => bs.map(b => b.id === id ? { ...b, status: "completed" as const } : b));
+    setBookings(bs => bs.filter(b => b.id !== id));
   }
-
-  const active = bookings.filter(b => b.status === "confirmed");
-  const completed = bookings.filter(b => b.status === "completed");
 
   if (bookings.length === 0) return null;
 
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-      {active.map(b => (
-        <BookingRow key={b.id} booking={b} onComplete={markComplete} />
-      ))}
-      {completed.map(b => (
+      {bookings.map(b => (
         <BookingRow key={b.id} booking={b} onComplete={markComplete} />
       ))}
     </div>
