@@ -42,7 +42,7 @@ export default async function AdminPage() {
   });
   const revenue = bookings
     .filter(b => b.status === "completed")
-    .reduce((sum, b) => sum + getPrice(b.service_id), 0);
+    .reduce((sum, b) => sum + (b.amount_paid ?? getPrice(b.service_id)), 0);
 
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)" }} className="min-h-screen">

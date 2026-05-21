@@ -13,7 +13,7 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { status } = await req.json();
+  const { status, amount_paid } = await req.json();
 
   if (!["confirmed", "completed", "cancelled"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -21,7 +21,7 @@ export async function PATCH(
 
   const { error } = await supabase
     .from("bookings")
-    .update({ status })
+    .update({ status, amount_paid: amount_paid ?? null })
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

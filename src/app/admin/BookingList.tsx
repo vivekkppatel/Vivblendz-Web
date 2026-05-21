@@ -12,13 +12,17 @@ function fmt12(time: string) {
 
 function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id: string) => void }) {
   const [loading, setLoading] = useState(false);
+  const [amount, setAmount] = useState(String(booking.amount_paid ?? ""));
 
   async function markDone() {
     setLoading(true);
     await fetch(`/api/admin/bookings/${booking.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "completed" }),
+      body: JSON.stringify({
+        status: "completed",
+        amount_paid: amount ? parseFloat(amount) : null,
+      }),
     });
     setLoading(false);
     onComplete(booking.id);
@@ -26,11 +30,8 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
 
   return (
     <div
-      style={{
-        background: "var(--surface)",
-        borderBottom: "1px solid var(--border)",
-      }}
-      className="p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6"
+      style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+      className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
     >
       <div className="flex gap-4 items-center min-w-[200px]">
         <div>
@@ -46,12 +47,25 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
           {booking.client_phone} &nbsp;·&nbsp; {booking.client_email}
         </p>
       </div>
-      <div className="text-right flex items-center gap-4 justify-end">
-        <div>
+      <div className="flex items-center gap-3 justify-end">
+        <div className="text-right">
           <p className="text-sm font-medium">{booking.service_name}</p>
           <p style={{ color: "var(--muted)" }} className="text-xs">
             {booking.duration_minutes} min
           </p>
+        </div>
+        {/* Amount paid input */}
+        <div style={{ display: "flex", alignItems: "center", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 10px", width: 90 }}>
+          <span style={{ color: "var(--muted)", fontSize: 13, marginRight: 2 }}>$</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            placeholder="0"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            style={{ background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 13, width: "100%", fontWeight: 600 }}
+          />
         </div>
         <button
           onClick={markDone}
