@@ -2,6 +2,9 @@ import Link from "next/link";
 import { SHOP, SERVICES } from "@/config/shop";
 import { getShopSettings } from "@/lib/getSettings";
 
+export const revalidate = 0;
+
+const DAY_ORDER = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const DAY_LABELS: Record<string, string> = {
   sunday: "Sun",
   monday: "Mon",
@@ -169,7 +172,7 @@ export default async function Home() {
             Hours
           </h2>
           <div className="space-y-3">
-            {Object.entries(settings.hours).map(([day, info]) => (
+            {DAY_ORDER.map(day => { const info = settings.hours[day]; return (
               <div key={day} className="flex items-center justify-between">
                 <span className="condensed font-semibold" style={{ color: info.open ? "var(--text)" : "var(--muted)" }}>
                   {DAY_LABELS[day]}
@@ -184,10 +187,13 @@ export default async function Home() {
                   </span>
                 )}
               </div>
-            ))}
+            ); })}
           </div>
           <p className="condensed mt-6" style={{ color: "var(--muted)", fontSize: 13 }}>
             {settings.address}
+          </p>
+          <p className="condensed mt-1" style={{ color: "var(--muted)", fontSize: 13 }}>
+            {settings.phone}
           </p>
         </div>
 
