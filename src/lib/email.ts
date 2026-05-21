@@ -11,6 +11,8 @@ export type BookingEmailData = {
   serviceName: string;
   date: string;
   time: string;
+  shopAddress?: string;
+  shopPhone?: string;
   calendarData?: CalendarEventData;
 };
 
@@ -67,10 +69,11 @@ export async function sendClientConfirmation(data: BookingEmailData) {
             <td style="padding:12px 16px;font-weight:600">${data.time}</td>
           </tr>
         </table>
-        <p style="margin:24px 0 0;color:#8a8480;font-size:13px;line-height:1.6">
-          Questions? Reach us at <a href="tel:${SHOP.phone}" style="color:#c9a84c">${SHOP.phone}</a><br>
-          ${SHOP.address}
-        </p>
+        <div style="margin-top:24px;background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:16px">
+          <p style="margin:0 0 6px;font-weight:700;font-size:13px;color:#f0ece4">Where to go</p>
+          <p style="margin:0 0 4px;color:#8a8480;font-size:13px">${data.shopAddress ?? SHOP.address}</p>
+          <p style="margin:0;font-size:13px"><a href="tel:${data.shopPhone ?? SHOP.phone}" style="color:#c9a84c">${data.shopPhone ?? SHOP.phone}</a></p>
+        </div>
       </div>
     `,
   });

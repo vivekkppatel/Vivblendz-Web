@@ -161,6 +161,8 @@ export default function BookPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [shopAddress, setShopAddress] = useState("");
+  const [shopPhone, setShopPhone] = useState("");
   const [zelleOpen, setZelleOpen] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +190,8 @@ export default function BookPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
+      if (data.address) setShopAddress(data.address);
+      if (data.phone) setShopPhone(data.phone);
       setDone(true);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -204,10 +208,17 @@ export default function BookPage() {
         <div style={{ width: 72, height: 72, background: "var(--orange)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "#000", marginBottom: 24 }}>✓</div>
         <h1 className="graffiti glow-orange" style={{ fontSize: 56, color: "var(--orange)", marginBottom: 8 }}>You&apos;re In!</h1>
         <p style={{ color: "var(--muted)", marginBottom: 6, fontSize: 15 }}>Confirmation sent to your email.</p>
-        <p style={{ fontSize: 15, marginBottom: 32 }}>
+        <p style={{ fontSize: 15, marginBottom: 24 }}>
           <strong style={{ color: "var(--orange)" }}>{service?.name}</strong>{" · "}
           {format(parseISO(date), "EEE, MMM d")}{" · "}{fmt12(time)}
         </p>
+        {(shopAddress || shopPhone) && (
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "16px 20px", marginBottom: 28, textAlign: "left", maxWidth: 320, width: "100%" }}>
+            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--orange)", letterSpacing: "0.08em" }}>WHERE TO GO</p>
+            {shopAddress && <p style={{ fontSize: 14, marginBottom: 4, color: "var(--text)" }}>{shopAddress}</p>}
+            {shopPhone && <p style={{ fontSize: 14, color: "var(--muted)" }}>{shopPhone}</p>}
+          </div>
+        )}
         <Link href="/" style={{ color: "var(--orange)" }} className="condensed font-bold underline">← Back to home</Link>
       </div>
     );

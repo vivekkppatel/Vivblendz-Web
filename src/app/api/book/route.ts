@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOwnerNotification, sendClientConfirmation } from "@/lib/email";
 import { addToGoogleCalendar } from "@/lib/calendar";
+import { getShopSettings } from "@/lib/getSettings";
 import { SERVICES } from "@/config/shop";
 import { format, parseISO } from "date-fns";
 
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
   }
 
+  const settings = await getShopSettings();
+
   const { error: insertError } = await supabase.from("bookings").insert({
     service_id: service.id,
     service_name: service.name,
@@ -61,6 +64,8 @@ export async function POST(req: NextRequest) {
     serviceName: service.name,
     date: formattedDate,
     time: formattedTime,
+    shopAddress: settings.address,
+    shopPhone: settings.phone,
   };
 
   const calendarData = {
@@ -79,5 +84,5 @@ export async function POST(req: NextRequest) {
     sendClientConfirmation(emailData),
   ]).then((results) => results.map((r) => (r.status === "fulfilled" ? r.value : null)));
 
-  return NextResponse.json({ success: true, calendarLink });
+  return NextResponse.json({ success: true, calendarLink, address: settings.address, phone: settings.phone });
 }
