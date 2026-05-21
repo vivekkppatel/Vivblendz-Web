@@ -1,17 +1,18 @@
 import { cookies } from "next/headers";
 import { supabase, type Booking } from "@/lib/supabase";
 import { getShopSettings } from "@/lib/getSettings";
-import { SHOP, ADMIN_PASSWORD } from "@/config/shop";
-import { format, parseISO, isToday, isFuture } from "date-fns";
+import { SHOP, ADMIN_PASSWORD, SERVICES } from "@/config/shop";
+import { parseISO, isToday, isFuture } from "date-fns";
 import AdminLoginForm from "./LoginForm";
 import SettingsForm from "./SettingsForm";
+import BookingList from "./BookingList";
 
 async function getBookings(): Promise<Booking[]> {
   try {
     const { data } = await supabase
       .from("bookings")
       .select("*")
-      .eq("status", "confirmed")
+      .in("status", ["confirmed", "completed"])
       .order("date", { ascending: true })
       .order("time", { ascending: true });
     return (data as Booking[]) ?? [];
@@ -20,11 +21,8 @@ async function getBookings(): Promise<Booking[]> {
   }
 }
 
-function fmt12(time: string) {
-  const [h, m] = time.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+function getPrice(serviceId: string): number {
+  return SERVICES.find(s => s.id === serviceId)?.price ?? 0;
 }
 
 export default async function AdminPage() {
@@ -36,11 +34,15 @@ export default async function AdminPage() {
   }
 
   const [bookings, settings] = await Promise.all([getBookings(), getShopSettings()]);
-  const today = bookings.filter((b) => isToday(parseISO(b.date)));
-  const upcoming = bookings.filter((b) => {
+
+  const today = bookings.filter(b => isToday(parseISO(b.date)));
+  const upcoming = bookings.filter(b => {
     const d = parseISO(b.date);
     return isFuture(d) && !isToday(d);
   });
+  const revenue = bookings
+    .filter(b => b.status === "completed")
+    .reduce((sum, b) => sum + getPrice(b.service_id), 0);
 
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)" }} className="min-h-screen">
@@ -66,19 +68,20 @@ export default async function AdminPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-10">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-4 gap-4 mb-10">
           {[
-            { label: "Today", count: today.length },
-            { label: "Upcoming", count: upcoming.length },
-            { label: "Total", count: bookings.length },
+            { label: "Today", count: today.length, prefix: "" },
+            { label: "Upcoming", count: upcoming.length, prefix: "" },
+            { label: "Total", count: bookings.length, prefix: "" },
+            { label: "Revenue", count: revenue, prefix: "$" },
           ].map((s) => (
             <div
               key={s.label}
               style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               className="rounded-lg p-6 text-center"
             >
-              <p className="text-4xl font-black mb-1" style={{ color: "var(--orange)" }}>
-                {s.count}
+              <p className="text-3xl font-black mb-1" style={{ color: "var(--orange)" }}>
+                {s.prefix}{s.count}
               </p>
               <p style={{ color: "var(--muted)" }} className="text-xs uppercase tracking-wider">
                 {s.label}
@@ -96,7 +99,7 @@ export default async function AdminPage() {
             >
               Today
             </h2>
-            <BookingTable bookings={today} />
+            <BookingList initialBookings={today} />
           </section>
         )}
 
@@ -109,7 +112,7 @@ export default async function AdminPage() {
             >
               Upcoming
             </h2>
-            <BookingTable bookings={upcoming} />
+            <BookingList initialBookings={upcoming} />
           </section>
         )}
 
@@ -126,44 +129,6 @@ export default async function AdminPage() {
           initialHours={settings.hours}
         />
       </div>
-    </div>
-  );
-}
-
-function BookingTable({ bookings }: { bookings: Booking[] }) {
-  return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-      {bookings.map((b, i) => (
-        <div
-          key={b.id}
-          style={{
-            background: i % 2 === 0 ? "var(--surface)" : "var(--surface-2)",
-            borderBottom: i < bookings.length - 1 ? "1px solid var(--border)" : "none",
-          }}
-          className="p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6"
-        >
-          <div className="flex gap-4 items-center min-w-[200px]">
-            <div>
-              <p className="font-bold text-sm">{format(parseISO(b.date), "EEE, MMM d")}</p>
-              <p style={{ color: "var(--orange)" }} className="text-sm font-semibold">
-                {fmt12(b.time)}
-              </p>
-            </div>
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm">{b.client_name}</p>
-            <p style={{ color: "var(--muted)" }} className="text-xs">
-              {b.client_phone} &nbsp;·&nbsp; {b.client_email}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-medium">{b.service_name}</p>
-            <p style={{ color: "var(--muted)" }} className="text-xs">
-              {b.duration_minutes} min
-            </p>
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
