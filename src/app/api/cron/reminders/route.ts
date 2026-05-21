@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendReminderEmail } from "@/lib/email";
-import { sendSMS } from "@/lib/sms";
 import { getShopSettings } from "@/lib/getSettings";
 import { format } from "date-fns";
 
@@ -25,22 +24,18 @@ export async function GET(req: NextRequest) {
   }
 
   const results = await Promise.allSettled(
-    (bookings ?? []).flatMap((b) => {
-      const reminderSMS = `Hey ${b.client_name}! Just a reminder — your cut at VivBlendz is today at ${b.time}. See you soon! 💈`;
-      return [
-        sendReminderEmail({
-          clientName: b.client_name,
-          clientEmail: b.client_email,
-          clientPhone: b.client_phone,
-          serviceName: b.service_name,
-          date: format(new Date(), "EEEE, MMMM d, yyyy"),
-          time: b.time,
-          shopAddress: settings.address,
-          shopPhone: settings.phone,
-        }),
-        sendSMS(b.client_phone, reminderSMS),
-      ];
-    })
+    (bookings ?? []).map((b) =>
+      sendReminderEmail({
+        clientName: b.client_name,
+        clientEmail: b.client_email,
+        clientPhone: b.client_phone,
+        serviceName: b.service_name,
+        date: format(new Date(), "EEEE, MMMM d, yyyy"),
+        time: b.time,
+        shopAddress: settings.address,
+        shopPhone: settings.phone,
+      })
+    )
   );
 
   const failures = results.filter((r) => r.status === "rejected").length;

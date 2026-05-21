@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOwnerNotification, sendClientConfirmation } from "@/lib/email";
-import { sendSMS } from "@/lib/sms";
 import { addToGoogleCalendar } from "@/lib/calendar";
 import { getShopSettings } from "@/lib/getSettings";
 import { SERVICES } from "@/config/shop";
@@ -78,14 +77,11 @@ export async function POST(req: NextRequest) {
     durationMinutes: service.duration,
   };
 
-  const confirmationSMS = `Hey ${name.trim()}! Your ${service.name} at VivBlendz is confirmed for ${formattedDate} at ${formattedTime}. See you then! 💈`;
-
   // Run all async side effects in parallel; don't block on failures
   const [calendarLink] = await Promise.allSettled([
     addToGoogleCalendar(calendarData),
     sendOwnerNotification({ ...emailData, calendarData }),
     sendClientConfirmation(emailData),
-    sendSMS(phone.trim(), confirmationSMS),
   ]).then((results) => results.map((r) => (r.status === "fulfilled" ? r.value : null)));
 
   return NextResponse.json({ success: true, calendarLink, address: settings.address, phone: settings.phone });
