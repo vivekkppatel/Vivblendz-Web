@@ -2,6 +2,11 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import type { Booking } from "@/lib/supabase";
+import { SERVICES } from "@/config/shop";
+
+function getDefaultPrice(serviceId: string): number {
+  return SERVICES.find(s => s.id === serviceId)?.price ?? 35;
+}
 
 function fmt12(time: string) {
   const [h, m] = time.split(":").map(Number);
@@ -12,7 +17,7 @@ function fmt12(time: string) {
 
 function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id: string) => void }) {
   const [loading, setLoading] = useState(false);
-  const [amount, setAmount] = useState(String(booking.amount_paid ?? ""));
+  const [amount, setAmount] = useState(String(booking.amount_paid ?? getDefaultPrice(booking.service_id)));
 
   async function markDone() {
     setLoading(true);
