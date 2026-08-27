@@ -52,7 +52,7 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
       <div className="flex gap-4 items-center min-w-[200px]">
         <div>
           <p className="font-bold text-sm">{format(parseISO(booking.date), "EEE, MMM d")}</p>
-          <p style={{ color: "var(--orange)" }} className="text-sm font-semibold">
+          <p style={{ color: "var(--accent-text)" }} className="text-sm font-semibold">
             {fmt12(booking.time)}
           </p>
         </div>
@@ -89,8 +89,8 @@ function BookingRow({ booking, onComplete }: { booking: Booking; onComplete: (id
           disabled={loading !== null}
           style={{
             background: "transparent",
-            border: "1px solid #22c55e",
-            color: "#22c55e",
+            border: "1px solid var(--ok)",
+            color: "var(--ok)",
             borderRadius: 6,
             padding: "5px 12px",
             fontSize: 12,

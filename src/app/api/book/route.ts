@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { sendOwnerNotification, sendClientConfirmation } from "@/lib/email";
 import { addToGoogleCalendar } from "@/lib/calendar";
 import { getShopSettings } from "@/lib/getSettings";
-import { SERVICES } from "@/config/shop";
+import { serviceById } from "@/config/shop";
+import { blockedStarts, generateSlots, windowFor } from "@/lib/slots";
 import { format, parseISO } from "date-fns";
 
 export async function POST(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "All fields are required" }, { status: 400 });
   }
 
-  const service = SERVICES.find((s) => s.id === serviceId);
+  const service = serviceById(serviceId);
   if (!service) {
     return NextResponse.json({ error: "Invalid service" }, { status: 400 });
   }
@@ -35,6 +36,44 @@ export async function POST(req: NextRequest) {
 
   const settings = await getShopSettings();
 
+  // Re-check availability server-side. The browser picked this slot from a
+  // list that may be seconds out of date, and nothing stops a request being
+  // sent without going through the page at all.
+  const window = windowFor(date, service.window, settings);
+  if (!window) {
+    return NextResponse.json(
+      { error: "That service isn't offered on that day." },
+      { status: 409 }
+    );
+  }
+
+  const { data: sameDay, error: lookupError } = await supabase
+    .from("bookings")
+    .select("time, duration_minutes")
+    .eq("date", date)
+    .eq("status", "confirmed");
+
+  if (lookupError) {
+    return NextResponse.json({ error: "Failed to check availability" }, { status: 500 });
+  }
+
+  // Distinguish "not a time we offer for this service" from "someone else
+  // got there first" — they need different things from the client.
+  if (!generateSlots(date, [], window).includes(time)) {
+    return NextResponse.json(
+      { error: `${service.name} isn't available at that time. Please pick another.` },
+      { status: 409 }
+    );
+  }
+
+  const taken = (sameDay ?? []).flatMap((b) => blockedStarts(b.time, b.duration_minutes));
+  if (!generateSlots(date, taken, window).includes(time)) {
+    return NextResponse.json(
+      { error: "Sorry — that time was just taken. Please pick another." },
+      { status: 409 }
+    );
+  }
+
   const { error: insertError } = await supabase.from("bookings").insert({
     service_id: service.id,
     service_name: service.name,
@@ -48,6 +87,15 @@ export async function POST(req: NextRequest) {
   });
 
   if (insertError) {
+    // 23505 is Postgres' unique-violation code. The partial unique index on
+    // (date, time) for confirmed bookings is what actually settles a race
+    // between two people confirming the same slot at the same moment.
+    if (insertError.code === "23505") {
+      return NextResponse.json(
+        { error: "Sorry — that time was just taken. Please pick another." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Failed to save booking" }, { status: 500 });
   }
 

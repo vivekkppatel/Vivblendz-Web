@@ -40,7 +40,12 @@ SUPABASE_SERVICE_ROLE_KEY=
 RESEND_API_KEY=
 OWNER_EMAIL=vivblendz@gmail.com
 ADMIN_PASSWORD=
+CRON_SECRET=
 ```
+
+See `.env.example` for what each key is and where to get it. All of these
+must also be set in Vercel before the first deploy — the app reads Supabase
+credentials at startup and the build fails without them.
 
 ## Admin Dashboard
 
@@ -63,45 +68,9 @@ Or just update your hours directly from the admin dashboard — no code needed.
 
 ## Supabase Schema
 
-Run this in your Supabase SQL editor:
-
-```sql
-create table bookings (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now(),
-  service_id text not null,
-  service_name text not null,
-  date text not null,
-  time text not null,
-  duration_minutes int not null,
-  client_name text not null,
-  client_email text not null,
-  client_phone text not null,
-  status text default 'confirmed'
-);
-
-create table shop_settings (
-  id int primary key default 1,
-  address text not null default '',
-  phone text not null default '',
-  hours jsonb not null default '{}'::jsonb,
-  check (id = 1)
-);
-
-insert into shop_settings (id, address, phone, hours) values (1,
-  'Your Address Here',
-  '(555) 000-0000',
-  '{
-    "sunday":    {"open": false, "times": ["12:00", "17:00"]},
-    "monday":    {"open": false, "times": ["12:00", "17:00"]},
-    "tuesday":   {"open": true,  "times": ["12:00", "17:00"]},
-    "wednesday": {"open": true,  "times": ["12:00", "17:00"]},
-    "thursday":  {"open": true,  "times": ["12:00", "17:00"]},
-    "friday":    {"open": true,  "times": ["12:00", "17:00"]},
-    "saturday":  {"open": true,  "times": ["12:00", "17:00"]}
-  }'::jsonb
-);
-```
+Run [`supabase_schema.sql`](./supabase_schema.sql) in your Supabase SQL editor
+(Dashboard -> SQL Editor -> New query -> paste -> Run). It creates the
+`bookings` and `shop_settings` tables and is safe to re-run.
 
 ## Deploy
 

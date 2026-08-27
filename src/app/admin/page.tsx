@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { supabase, type Booking } from "@/lib/supabase";
 import { getShopSettings } from "@/lib/getSettings";
-import { SHOP, ADMIN_PASSWORD, SERVICES } from "@/config/shop";
+import { SHOP, SERVICES } from "@/config/shop";
+import { isAdminAuthed } from "@/lib/adminAuth";
 import { parseISO, isToday, isFuture } from "date-fns";
 import AdminLoginForm from "./LoginForm";
 import SettingsForm from "./SettingsForm";
@@ -26,8 +26,7 @@ function getPrice(serviceId: string): number {
 }
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const authed = cookieStore.get("admin_auth")?.value === ADMIN_PASSWORD;
+  const authed = await isAdminAuthed();
 
   if (!authed) {
     return <AdminLoginForm />;
@@ -47,11 +46,11 @@ export default async function AdminPage() {
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)" }} className="min-h-screen">
       <nav
-        style={{ borderBottom: "1px solid var(--border)", background: "rgba(13,13,13,0.9)" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--scrim)" }}
         className="sticky top-0 z-10"
       >
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span style={{ color: "var(--orange)" }} className="font-black text-xl uppercase tracking-widest">
+          <span style={{ color: "var(--accent-text)" }} className="font-black text-xl uppercase tracking-widest">
             {SHOP.name} &mdash; Admin
           </span>
           <form action="/api/admin/logout" method="POST">
@@ -80,7 +79,7 @@ export default async function AdminPage() {
               style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               className="rounded-lg p-6 text-center"
             >
-              <p className="text-3xl font-black mb-1" style={{ color: "var(--orange)" }}>
+              <p className="text-3xl font-black mb-1" style={{ color: "var(--accent-text)" }}>
                 {s.prefix}{s.count}
               </p>
               <p style={{ color: "var(--muted)" }} className="text-xs uppercase tracking-wider">
@@ -94,7 +93,7 @@ export default async function AdminPage() {
         {today.length > 0 && (
           <section className="mb-10">
             <h2
-              style={{ color: "var(--orange)", letterSpacing: "0.15em" }}
+              style={{ color: "var(--accent-text)", letterSpacing: "0.15em" }}
               className="text-xs uppercase font-semibold mb-4"
             >
               Today
@@ -127,6 +126,9 @@ export default async function AdminPage() {
           initialAddress={settings.address}
           initialPhone={settings.phone}
           initialHours={settings.hours}
+          initialOffDayHours={settings.offDayHours}
+          initialAfterHoursEnd={settings.afterHoursEnd}
+          initialAfterHoursEnabled={settings.afterHoursEnabled}
         />
       </div>
     </div>

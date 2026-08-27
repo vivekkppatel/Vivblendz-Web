@@ -68,7 +68,7 @@ export default function AdminLoginForm() {
             style={{
               width: "100%",
               background: password ? "var(--gold)" : "var(--border)",
-              color: password ? "#000" : "var(--muted)",
+              color: password ? "var(--on-accent)" : "var(--muted)",
               border: "none",
               borderRadius: 6,
               padding: "13px",

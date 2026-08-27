@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { ADMIN_PASSWORD } from "@/config/shop";
+import { isAdminAuthed } from "@/lib/adminAuth";
 import { supabase } from "@/lib/supabase";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  if (cookieStore.get("admin_auth")?.value !== ADMIN_PASSWORD) {
+  if (!(await isAdminAuthed())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
