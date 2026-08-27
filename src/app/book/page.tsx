@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SHOP, SERVICES, type Service } from "@/config/shop";
-import { format, addDays, startOfWeek, parseISO } from "date-fns";
+import { format, addDays, addMonths, startOfWeek, startOfMonth, isSameMonth, parseISO } from "date-fns";
 
 function fmt12(time: string) {
   const [h, m] = time.split(":").map(Number);
@@ -83,37 +83,42 @@ function ServiceRow({ service, selected, onSelect }: {
   );
 }
 
-function WeekCalendar({ selected, onSelect, availableDays, weekStart, onWeekChange }: {
+function MonthCalendar({ selected, onSelect, availableDays, monthStart, onMonthChange }: {
   selected: string;
   onSelect: (d: string) => void;
   /** date -> bookable for the chosen service; null while unknown. */
   availableDays: Record<string, boolean> | null;
-  /** Start of the displayed week. Owned by the page so that picking a service
-      with no availability this week can move the calendar to one that has some. */
-  weekStart: string;
-  onWeekChange: (startDate: string) => void;
+  /** First of the displayed month. Owned by the page so that picking a service
+      with no availability this month can move the calendar to one that has some. */
+  monthStart: string;
+  onMonthChange: (firstOfMonth: string) => void;
 }) {
-  const weekStartDate = parseISO(weekStart);
+  const monthDate = parseISO(monthStart);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
-  const atFirstWeek = weekStartDate <= startOfWeek(today, { weekStartsOn: 0 });
+
+  // Six weeks from the Sunday on or before the 1st covers every month layout.
+  const gridStart = startOfWeek(monthDate, { weekStartsOn: 0 });
+  const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+  const atFirstMonth = monthDate <= startOfMonth(today);
 
   return (
-    <div style={{ padding: "16px 20px 0" }}>
+    <div style={{ padding: "16px 20px 4px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <button
-          onClick={() => onWeekChange(toDateStr(addDays(weekStartDate, -7)))}
-          disabled={atFirstWeek}
-          style={{ background: "none", border: "none", color: atFirstWeek ? "#5C2029" : "var(--muted)", fontSize: 22, cursor: atFirstWeek ? "not-allowed" : "pointer", padding: "0 4px" }}
-        >‹</button>
+          onClick={() => onMonthChange(toDateStr(startOfMonth(addMonths(monthDate, -1))))}
+          disabled={atFirstMonth}
+          aria-label="Previous month"
+          style={{ background: "none", border: "none", color: atFirstMonth ? "#5C2029" : "var(--muted)", fontSize: 22, cursor: atFirstMonth ? "not-allowed" : "pointer", padding: "0 4px" }}
+        >&lsaquo;</button>
         <p style={{ fontFamily: "var(--font-condensed)", fontWeight: 700, fontSize: 15, letterSpacing: "0.1em" }}>
-          {format(weekStartDate, "MMMM yyyy").toUpperCase()}
+          {format(monthDate, "MMMM yyyy").toUpperCase()}
         </p>
         <button
-          onClick={() => onWeekChange(toDateStr(addDays(weekStartDate, 7)))}
+          onClick={() => onMonthChange(toDateStr(startOfMonth(addMonths(monthDate, 1))))}
+          aria-label="Next month"
           style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 22, cursor: "pointer", padding: "0 4px" }}
-        >›</button>
+        >&rsaquo;</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
@@ -122,8 +127,9 @@ function WeekCalendar({ selected, onSelect, availableDays, weekStart, onWeekChan
             {d}
           </p>
         ))}
-        {days.map((day) => {
+        {cells.map((day) => {
           const str = toDateStr(day);
+          const outside = !isSameMonth(day, monthDate);
           const isPast = day < today;
           // Unknown availability stays clickable so the calendar isn't dead
           // while the first request is in flight.
@@ -131,6 +137,11 @@ function WeekCalendar({ selected, onSelect, availableDays, weekStart, onWeekChan
           const isBlocked = isPast || isClosed;
           const isSelected = str === selected;
           const isToday = str === toDateStr(today);
+
+          // Days spilling in from the neighbouring month keep the grid square
+          // without inviting a click that would jump the view.
+          if (outside) return <span key={str} style={{ height: 36 }} />;
+
           return (
             <button
               key={str}
@@ -174,8 +185,8 @@ export default function BookPage() {
   // be shown against the current one.
   const [daysByService, setDaysByService] =
     useState<Record<string, Record<string, boolean>>>({});
-  const [weekStart, setWeekStart] = useState(
-    () => toDateStr(startOfWeek(new Date(), { weekStartsOn: 0 })));
+  const [monthStart, setMonthStart] = useState(
+    () => toDateStr(startOfMonth(new Date())));
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -197,7 +208,9 @@ export default function BookPage() {
     if (!service) return;
     const id = service.id;
     let cancelled = false;
-    fetch(`/api/days?service=${encodeURIComponent(id)}&start=${weekStart}&days=14`)
+    // The grid shows six weeks from the Sunday on or before the 1st.
+    const gridStart = toDateStr(startOfWeek(parseISO(monthStart), { weekStartsOn: 0 }));
+    fetch(`/api/days?service=${encodeURIComponent(id)}&start=${gridStart}&days=42`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled || !d.days) return;
@@ -208,15 +221,15 @@ export default function BookPage() {
           const next = Object.keys(d.days).sort()
             .find((day) => day >= todayStr && d.days[day]);
           if (!next) return current;
-          // Bring the calendar to the week that day is in, or it lands on a
-          // week where nothing looks selected.
-          setWeekStart(toDateStr(startOfWeek(parseISO(next), { weekStartsOn: 0 })));
+          // Bring the calendar to the month that day is in, or it lands on a
+          // month where nothing looks selected.
+          setMonthStart(toDateStr(startOfMonth(parseISO(next))));
           return next;
         });
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [service, weekStart]);
+  }, [service, monthStart]);
 
   const availableDays = service ? daysByService[service.id] ?? null : null;
 
@@ -309,7 +322,10 @@ export default function BookPage() {
         </div>
         <div>
           <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 1 }}>{SHOP.name}</p>
-          <p style={{ color: "var(--muted)", fontSize: 12 }}>{SHOP.address}</p>
+          {/* The address here came from the hardcoded config placeholder, not
+              the one set in /admin. The real address is shown on the
+              confirmation screen, once there's a booking to go to. */}
+          <p style={{ color: "var(--muted)", fontSize: 12 }}>{SHOP.tagline}</p>
         </div>
       </div>
 
@@ -321,12 +337,12 @@ export default function BookPage() {
 
       {/* Date & Time */}
       <SectionHeader>SELECT DATE &amp; TIME</SectionHeader>
-      <WeekCalendar
+      <MonthCalendar
         selected={date}
         onSelect={(d) => { setDate(d); setTime(""); }}
         availableDays={availableDays}
-        weekStart={weekStart}
-        onWeekChange={setWeekStart}
+        monthStart={monthStart}
+        onMonthChange={setMonthStart}
       />
 
       <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
