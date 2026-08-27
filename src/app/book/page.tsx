@@ -83,25 +83,35 @@ function ServiceRow({ service, selected, onSelect }: {
   );
 }
 
-function WeekCalendar({ selected, onSelect }: { selected: string; onSelect: (d: string) => void }) {
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
+function WeekCalendar({ selected, onSelect, availableDays, weekStart, onWeekChange }: {
+  selected: string;
+  onSelect: (d: string) => void;
+  /** date -> bookable for the chosen service; null while unknown. */
+  availableDays: Record<string, boolean> | null;
+  /** Start of the displayed week. Owned by the page so that picking a service
+      with no availability this week can move the calendar to one that has some. */
+  weekStart: string;
+  onWeekChange: (startDate: string) => void;
+}) {
+  const weekStartDate = parseISO(weekStart);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
+  const atFirstWeek = weekStartDate <= startOfWeek(today, { weekStartsOn: 0 });
 
   return (
     <div style={{ padding: "16px 20px 0" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <button
-          onClick={() => setWeekStart((w) => addDays(w, -7))}
-          disabled={weekStart <= today}
-          style={{ background: "none", border: "none", color: weekStart <= today ? "#5C2029" : "var(--muted)", fontSize: 22, cursor: weekStart <= today ? "not-allowed" : "pointer", padding: "0 4px" }}
+          onClick={() => onWeekChange(toDateStr(addDays(weekStartDate, -7)))}
+          disabled={atFirstWeek}
+          style={{ background: "none", border: "none", color: atFirstWeek ? "#5C2029" : "var(--muted)", fontSize: 22, cursor: atFirstWeek ? "not-allowed" : "pointer", padding: "0 4px" }}
         >‹</button>
         <p style={{ fontFamily: "var(--font-condensed)", fontWeight: 700, fontSize: 15, letterSpacing: "0.1em" }}>
-          {format(weekStart, "MMMM yyyy").toUpperCase()}
+          {format(weekStartDate, "MMMM yyyy").toUpperCase()}
         </p>
         <button
-          onClick={() => setWeekStart((w) => addDays(w, 7))}
+          onClick={() => onWeekChange(toDateStr(addDays(weekStartDate, 7)))}
           style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 22, cursor: "pointer", padding: "0 4px" }}
         >›</button>
       </div>
@@ -115,16 +125,22 @@ function WeekCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
         {days.map((day) => {
           const str = toDateStr(day);
           const isPast = day < today;
+          // Unknown availability stays clickable so the calendar isn't dead
+          // while the first request is in flight.
+          const isClosed = availableDays ? availableDays[str] === false : false;
+          const isBlocked = isPast || isClosed;
           const isSelected = str === selected;
           const isToday = str === toDateStr(today);
           return (
             <button
               key={str}
-              onClick={() => !isPast && onSelect(str)}
-              disabled={isPast}
+              onClick={() => !isBlocked && onSelect(str)}
+              disabled={isBlocked}
+              title={isClosed && !isPast ? "Not available for this service" : undefined}
               style={{
                 background: isSelected ? "var(--accent)" : "transparent",
                 border: isToday && !isSelected ? "1px solid var(--accent)" : "1px solid transparent",
+                opacity: isClosed && !isPast ? 0.35 : 1,
                 borderRadius: "50%",
                 width: 36,
                 height: 36,
@@ -134,8 +150,8 @@ function WeekCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
                 justifyContent: "center",
                 fontWeight: isSelected ? 700 : 400,
                 fontSize: 14,
-                color: isSelected ? "var(--on-accent)" : isPast ? "#5C2029" : "var(--text)",
-                cursor: isPast ? "not-allowed" : "pointer",
+                color: isSelected ? "var(--on-accent)" : isBlocked ? "#5C2029" : "var(--text)",
+                cursor: isBlocked ? "not-allowed" : "pointer",
                 transition: "all 0.12s",
               }}
             >
@@ -154,6 +170,12 @@ export default function BookPage() {
   const [slots, setSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [closedDay, setClosedDay] = useState(false);
+  // Keyed by service so a pending response for the previous service can never
+  // be shown against the current one.
+  const [daysByService, setDaysByService] =
+    useState<Record<string, Record<string, boolean>>>({});
+  const [weekStart, setWeekStart] = useState(
+    () => toDateStr(startOfWeek(new Date(), { weekStartsOn: 0 })));
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -165,6 +187,38 @@ export default function BookPage() {
   const [shopPhone, setShopPhone] = useState("");
   const [zelleOpen, setZelleOpen] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
+
+  // Which days the calendar should let you click at all. Each service is
+  // offered on a different set of days, so this refetches with the service
+  // and whenever the calendar moves to another week. If the day currently
+  // chosen isn't offered by the newly chosen service, move to the next one
+  // that is rather than leaving a dead selection behind.
+  useEffect(() => {
+    if (!service) return;
+    const id = service.id;
+    let cancelled = false;
+    fetch(`/api/days?service=${encodeURIComponent(id)}&start=${weekStart}&days=14`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d.days) return;
+        setDaysByService((prev) => ({ ...prev, [id]: { ...prev[id], ...d.days } }));
+        setDate((current) => {
+          if (d.days[current] !== false) return current;
+          const todayStr = toDateStr(new Date());
+          const next = Object.keys(d.days).sort()
+            .find((day) => day >= todayStr && d.days[day]);
+          if (!next) return current;
+          // Bring the calendar to the week that day is in, or it lands on a
+          // week where nothing looks selected.
+          setWeekStart(toDateStr(startOfWeek(parseISO(next), { weekStartsOn: 0 })));
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [service, weekStart]);
+
+  const availableDays = service ? daysByService[service.id] ?? null : null;
 
   // Availability depends on the service as well as the date: each one is
   // bookable in its own window, so changing either has to refetch.
@@ -267,7 +321,13 @@ export default function BookPage() {
 
       {/* Date & Time */}
       <SectionHeader>SELECT DATE &amp; TIME</SectionHeader>
-      <WeekCalendar selected={date} onSelect={(d) => { setDate(d); setTime(""); }} />
+      <WeekCalendar
+        selected={date}
+        onSelect={(d) => { setDate(d); setTime(""); }}
+        availableDays={availableDays}
+        weekStart={weekStart}
+        onWeekChange={setWeekStart}
+      />
 
       <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
         {loadingSlots && <p style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "12px 0" }}>Loading…</p>}
