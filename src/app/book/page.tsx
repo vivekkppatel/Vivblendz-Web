@@ -60,15 +60,15 @@ function ServiceRow({ service, selected, onSelect }: {
         width: 22,
         height: 22,
         borderRadius: "50%",
-        border: `2px solid ${selected ? "var(--orange)" : "#444"}`,
-        background: selected ? "var(--orange)" : "transparent",
+        border: `2px solid ${selected ? "var(--accent)" : "#444"}`,
+        background: selected ? "var(--accent)" : "transparent",
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         transition: "all 0.15s",
       }}>
-        {selected && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#000" }} />}
+        {selected && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--on-accent)" }} />}
       </div>
       <div style={{ flex: 1 }}>
         <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 2 }}>{service.name}</p>
@@ -95,7 +95,7 @@ function WeekCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
         <button
           onClick={() => setWeekStart((w) => addDays(w, -7))}
           disabled={weekStart <= today}
-          style={{ background: "none", border: "none", color: weekStart <= today ? "#333" : "var(--muted)", fontSize: 22, cursor: weekStart <= today ? "not-allowed" : "pointer", padding: "0 4px" }}
+          style={{ background: "none", border: "none", color: weekStart <= today ? "#5C2029" : "var(--muted)", fontSize: 22, cursor: weekStart <= today ? "not-allowed" : "pointer", padding: "0 4px" }}
         >‹</button>
         <p style={{ fontFamily: "var(--font-condensed)", fontWeight: 700, fontSize: 15, letterSpacing: "0.1em" }}>
           {format(weekStart, "MMMM yyyy").toUpperCase()}
@@ -123,8 +123,8 @@ function WeekCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
               onClick={() => !isPast && onSelect(str)}
               disabled={isPast}
               style={{
-                background: isSelected ? "var(--orange)" : "transparent",
-                border: isToday && !isSelected ? "1px solid var(--orange)" : "1px solid transparent",
+                background: isSelected ? "var(--accent)" : "transparent",
+                border: isToday && !isSelected ? "1px solid var(--accent)" : "1px solid transparent",
                 borderRadius: "50%",
                 width: 36,
                 height: 36,
@@ -134,7 +134,7 @@ function WeekCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
                 justifyContent: "center",
                 fontWeight: isSelected ? 700 : 400,
                 fontSize: 14,
-                color: isSelected ? "#000" : isPast ? "#333" : "var(--text)",
+                color: isSelected ? "var(--on-accent)" : isPast ? "#5C2029" : "var(--text)",
                 cursor: isPast ? "not-allowed" : "pointer",
                 transition: "all 0.12s",
               }}
@@ -166,17 +166,29 @@ export default function BookPage() {
   const [zelleOpen, setZelleOpen] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
 
+  // Availability depends on the service as well as the date: each one is
+  // bookable in its own window, so changing either has to refetch.
   useEffect(() => {
-    if (!date) return;
+    if (!date || !service) {
+      setSlots([]);
+      setClosedDay(false);
+      return;
+    }
+    let cancelled = false;
     setLoadingSlots(true);
     setSlots([]);
     setTime("");
     setClosedDay(false);
-    fetch(`/api/slots?date=${date}`)
+    fetch(`/api/slots?date=${date}&service=${encodeURIComponent(service.id)}`)
       .then((r) => r.json())
-      .then((d) => { setClosedDay(d.closed); setSlots(d.slots ?? []); })
-      .finally(() => setLoadingSlots(false));
-  }, [date]);
+      .then((d) => {
+        if (cancelled) return;
+        setClosedDay(d.closed);
+        setSlots(d.slots ?? []);
+      })
+      .finally(() => { if (!cancelled) setLoadingSlots(false); });
+    return () => { cancelled = true; };
+  }, [date, service]);
 
   async function submit() {
     if (!service || !time || !name.trim() || !email.trim() || !phone.trim()) return;
@@ -205,21 +217,21 @@ export default function BookPage() {
   if (done) {
     return (
       <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px", textAlign: "center" }}>
-        <div style={{ width: 72, height: 72, background: "var(--orange)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "#000", marginBottom: 24 }}>✓</div>
-        <h1 className="graffiti glow-orange" style={{ fontSize: 56, color: "var(--orange)", marginBottom: 8 }}>You&apos;re In!</h1>
+        <div style={{ width: 72, height: 72, background: "var(--accent)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "var(--on-accent)", marginBottom: 24 }}>✓</div>
+        <h1 className="graffiti glow" style={{ fontSize: 56, color: "var(--accent-text)", marginBottom: 8 }}>You&apos;re In!</h1>
         <p style={{ color: "var(--muted)", marginBottom: 6, fontSize: 15 }}>Confirmation sent to your email.</p>
         <p style={{ fontSize: 15, marginBottom: 24 }}>
-          <strong style={{ color: "var(--orange)" }}>{service?.name}</strong>{" · "}
+          <strong style={{ color: "var(--accent-text)" }}>{service?.name}</strong>{" · "}
           {format(parseISO(date), "EEE, MMM d")}{" · "}{fmt12(time)}
         </p>
         {(shopAddress || shopPhone) && (
           <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "16px 20px", marginBottom: 28, textAlign: "left", maxWidth: 320, width: "100%" }}>
-            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--orange)", letterSpacing: "0.08em" }}>WHERE TO GO</p>
+            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--accent-text)", letterSpacing: "0.08em" }}>WHERE TO GO</p>
             {shopAddress && <p style={{ fontSize: 14, marginBottom: 4, color: "var(--text)" }}>{shopAddress}</p>}
             {shopPhone && <p style={{ fontSize: 14, color: "var(--muted)" }}>{shopPhone}</p>}
           </div>
         )}
-        <Link href="/" style={{ color: "var(--orange)" }} className="condensed font-bold underline">← Back to home</Link>
+        <Link href="/" style={{ color: "var(--accent-text)" }} className="condensed font-bold underline">← Back to home</Link>
       </div>
     );
   }
@@ -228,8 +240,8 @@ export default function BookPage() {
     <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh", paddingBottom: 90 }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "rgba(10,10,10,0.96)", backdropFilter: "blur(12px)", zIndex: 50 }}>
-        <Link href="/" style={{ fontFamily: "var(--font-condensed)", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", color: "var(--orange)", textDecoration: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--scrim)", backdropFilter: "blur(12px)", zIndex: 50 }}>
+        <Link href="/" style={{ fontFamily: "var(--font-condensed)", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", color: "var(--accent-text)", textDecoration: "none" }}>
           CANCEL
         </Link>
         <p style={{ fontFamily: "var(--font-condensed)", fontWeight: 900, fontSize: 15, letterSpacing: "0.12em" }}>BOOK APPOINTMENT</p>
@@ -238,8 +250,8 @@ export default function BookPage() {
 
       {/* Profile card */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--orange)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span className="graffiti" style={{ fontSize: 20, color: "#000", lineHeight: 1 }}>V</span>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span className="graffiti" style={{ fontSize: 20, color: "var(--on-accent)", lineHeight: 1 }}>V</span>
         </div>
         <div>
           <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 1 }}>{SHOP.name}</p>
@@ -259,8 +271,19 @@ export default function BookPage() {
 
       <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
         {loadingSlots && <p style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "12px 0" }}>Loading…</p>}
-        {!loadingSlots && (closedDay || slots.length === 0) && (
-          <p style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "12px 0" }}>No available times</p>
+        {!loadingSlots && !service && (
+          <p style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "12px 0" }}>
+            Pick a service to see available times
+          </p>
+        )}
+        {!loadingSlots && service && (closedDay || slots.length === 0) && (
+          <p style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "12px 0" }}>
+            {service.window === "off"
+              ? "No off-day times this day — off-day cuts are only on days the shop is closed."
+              : service.window === "after"
+              ? "No after-hours times this day."
+              : "No available times"}
+          </p>
         )}
         {!loadingSlots && slots.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
@@ -269,9 +292,9 @@ export default function BookPage() {
                 key={s}
                 onClick={() => { setTime(s); setTimeout(() => infoRef.current?.scrollIntoView({ behavior: "smooth" }), 100); }}
                 style={{
-                  background: time === s ? "var(--orange)" : "var(--surface)",
-                  color: time === s ? "#000" : "var(--text)",
-                  border: `1px solid ${time === s ? "var(--orange)" : "var(--border)"}`,
+                  background: time === s ? "var(--accent)" : "var(--surface)",
+                  color: time === s ? "var(--on-accent)" : "var(--text)",
+                  border: `1px solid ${time === s ? "var(--accent)" : "var(--border)"}`,
                   borderRadius: 6,
                   padding: "10px 6px",
                   fontWeight: time === s ? 700 : 400,
@@ -316,8 +339,8 @@ export default function BookPage() {
       {/* Payment */}
       <SectionHeader>PAYMENT</SectionHeader>
       <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 14 }}>
-        <div style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid var(--orange)", background: "var(--orange)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#000" }} />
+        <div style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid var(--accent)", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--on-accent)" }} />
         </div>
         <div style={{ width: 32, height: 32, background: "var(--surface-2)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💵</div>
         <p style={{ fontWeight: 600, fontSize: 16 }}>In Shop</p>
@@ -341,17 +364,17 @@ export default function BookPage() {
         </div>
       </div>
 
-      {error && <p style={{ color: "#ff4444", fontSize: 14, padding: "8px 20px" }}>{error}</p>}
+      {error && <p style={{ color: "var(--danger)", fontSize: 14, padding: "8px 20px" }}>{error}</p>}
 
       {/* Sticky footer */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(10,10,10,0.97)", borderTop: "1px solid var(--border)", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 50, backdropFilter: "blur(12px)" }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--scrim)", borderTop: "1px solid var(--border)", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 50, backdropFilter: "blur(12px)" }}>
         <p style={{ fontWeight: 800, fontSize: 22 }}>${service?.price ?? 0}</p>
         <button
           onClick={submit}
           disabled={!canBook}
           style={{
-            background: canBook ? "var(--orange)" : "var(--border)",
-            color: canBook ? "#000" : "var(--muted)",
+            background: canBook ? "var(--accent)" : "var(--border)",
+            color: canBook ? "var(--on-accent)" : "var(--muted)",
             border: "none",
             borderRadius: 8,
             padding: "14px 40px",

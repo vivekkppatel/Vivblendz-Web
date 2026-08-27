@@ -12,7 +12,7 @@ export async function GET() {
   }
   const { data, error } = await supabase
     .from("shop_settings")
-    .select("address, phone, hours")
+    .select("address, phone, hours, off_day_hours, after_hours_end, after_hours_enabled")
     .eq("id", 1)
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -24,9 +24,20 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = await req.json();
-  const { error } = await supabase
-    .from("shop_settings")
-    .upsert({ id: 1, address: body.address, phone: body.phone, hours: body.hours });
+
+  if (typeof body.afterHoursEnd === "string" && !/^\d{2}:\d{2}$/.test(body.afterHoursEnd)) {
+    return NextResponse.json({ error: "Invalid after-hours time" }, { status: 400 });
+  }
+
+  const { error } = await supabase.from("shop_settings").upsert({
+    id: 1,
+    address: body.address,
+    phone: body.phone,
+    hours: body.hours,
+    off_day_hours: body.offDayHours,
+    after_hours_end: body.afterHoursEnd,
+    after_hours_enabled: body.afterHoursEnabled,
+  });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

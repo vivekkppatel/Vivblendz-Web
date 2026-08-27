@@ -31,13 +31,13 @@ export default async function Home() {
 
       {/* ── Nav ──────────────────────────────── */}
       <nav
-        style={{ borderBottom: "1px solid var(--border)", background: "rgba(10,10,10,0.9)" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--scrim)" }}
         className="sticky top-0 z-50 backdrop-blur-md"
       >
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <span
-            className="graffiti glow-orange"
-            style={{ color: "var(--orange)", fontSize: 26 }}
+            className="graffiti glow"
+            style={{ color: "var(--accent-text)", fontSize: 26 }}
           >
             {SHOP.name}
           </span>
@@ -55,7 +55,7 @@ export default async function Home() {
             )}
             <Link
               href="/book"
-              style={{ background: "var(--orange)", color: "#fff", whiteSpace: "nowrap" }}
+              style={{ background: "var(--accent)", color: "var(--on-accent)", whiteSpace: "nowrap" }}
               className="condensed font-bold text-sm px-4 py-2 rounded hover:opacity-90 transition-opacity"
             >
               Book Now
@@ -73,7 +73,7 @@ export default async function Home() {
           style={{
             fontSize: "clamp(100px, 18vw, 230px)",
             color: "transparent",
-            WebkitTextStroke: "1px rgba(59,130,246,0.25)",
+            WebkitTextStroke: "1px rgba(196, 16, 42, 0.30)",
             letterSpacing: "-0.04em",
           }}
         >
@@ -83,10 +83,10 @@ export default async function Home() {
         <div className="relative z-10">
           <span className="tag mb-6 inline-block">Premium Barbershop Experience</span>
           <h1
-            className="graffiti glow-orange mb-4"
+            className="graffiti glow mb-4"
             style={{
               fontSize: "clamp(38px, 11vw, 160px)",
-              color: "var(--orange)",
+              color: "var(--accent-text)",
             }}
           >
             {SHOP.name}
@@ -103,7 +103,7 @@ export default async function Home() {
           </p>
           <Link
             href="/book"
-            style={{ background: "var(--orange)", color: "#000" }}
+            style={{ background: "var(--accent)", color: "var(--on-accent)" }}
             className="condensed font-black text-lg px-10 py-4 rounded inline-block hover:opacity-90 transition-opacity"
           >
             Book Your Cut →
@@ -117,10 +117,10 @@ export default async function Home() {
         className="max-w-6xl mx-auto px-6 py-20"
       >
         <div className="flex items-end justify-between mb-10">
-          <h2 className="graffiti" style={{ fontSize: "clamp(36px, 6vw, 72px)", color: "var(--orange)" }}>
+          <h2 className="graffiti" style={{ fontSize: "clamp(36px, 6vw, 72px)", color: "var(--accent-text)" }}>
             Services
           </h2>
-          <Link href="/book" className="condensed font-bold text-sm" style={{ color: "var(--orange)" }}>
+          <Link href="/book" className="condensed font-bold text-sm" style={{ color: "var(--accent-text)" }}>
             Book Now →
           </Link>
         </div>
@@ -145,7 +145,7 @@ export default async function Home() {
                 <h3 className="condensed font-bold text-lg text-white">{s.name}</h3>
                 <span
                   className="condensed font-black text-xl"
-                  style={{ color: "var(--orange)" }}
+                  style={{ color: "var(--accent-text)" }}
                 >
                   ${s.price}
                 </span>
@@ -168,7 +168,7 @@ export default async function Home() {
       >
         {/* Hours */}
         <div>
-          <h2 className="graffiti mb-8" style={{ fontSize: 48, color: "var(--orange)" }}>
+          <h2 className="graffiti mb-8" style={{ fontSize: 48, color: "var(--accent-text)" }}>
             Hours
           </h2>
           <div className="space-y-3">
@@ -178,7 +178,7 @@ export default async function Home() {
                   {DAY_LABELS[day]}
                 </span>
                 {info.open ? (
-                  <span className="condensed font-bold" style={{ color: "var(--orange)" }}>
+                  <span className="condensed font-bold" style={{ color: "var(--accent-text)" }}>
                     {fmt12(info.times[0])} – {fmt12(info.times[1])}
                   </span>
                 ) : (
@@ -194,7 +194,7 @@ export default async function Home() {
         {/* Instagram */}
         {SHOP.instagram && (
           <div>
-            <h2 className="graffiti mb-4" style={{ fontSize: 48, color: "var(--orange)" }}>
+            <h2 className="graffiti mb-4" style={{ fontSize: 48, color: "var(--accent-text)" }}>
               Follow
             </h2>
             <p style={{ color: "var(--muted)", fontSize: 15, marginBottom: 24, lineHeight: 1.6 }}>
@@ -219,7 +219,7 @@ export default async function Home() {
               className="hover:border-[#ff5c00] group"
             >
               {/* Instagram icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--orange)" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent-text)" }}>
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
                 <circle cx="12" cy="12" r="4"/>
                 <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
@@ -239,7 +239,7 @@ export default async function Home() {
                   marginTop: 16,
                 }}
               >
-                <p className="condensed font-bold" style={{ color: "var(--orange)", marginBottom: 4 }}>
+                <p className="condensed font-bold" style={{ color: "var(--accent-text)", marginBottom: 4 }}>
                   Walk-ins Welcome
                 </p>
                 <p style={{ color: "var(--muted)", fontSize: 13 }}>
@@ -261,8 +261,8 @@ export default async function Home() {
         className="py-24 px-6"
       >
         <h2
-          className="graffiti glow-orange mb-4"
-          style={{ fontSize: "clamp(40px, 8vw, 96px)", color: "var(--orange)" }}
+          className="graffiti glow mb-4"
+          style={{ fontSize: "clamp(40px, 8vw, 96px)", color: "var(--accent-text)" }}
         >
           Fresh Cut?
         </h2>
@@ -271,7 +271,7 @@ export default async function Home() {
         </p>
         <Link
           href="/book"
-          style={{ background: "var(--orange)", color: "#000" }}
+          style={{ background: "var(--accent)", color: "var(--on-accent)" }}
           className="condensed font-black text-lg px-12 py-4 rounded inline-block hover:opacity-90 transition-opacity"
         >
           Book Now →

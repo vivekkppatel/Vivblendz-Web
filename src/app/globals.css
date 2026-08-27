@@ -1,19 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/*
+  Palette built from the two brand colours: #70020F deep burgundy and
+  #FFDEE2 pale pink. The burgundy is too dark to read as an accent against a
+  dark ground, so it anchors the surfaces and a brighter crimson carries the
+  interactive elements.
+*/
 :root {
-  --orange: #a855f7;
-  --orange-dim: #7c3aed;
-  --orange-glow: rgba(168, 85, 247, 0.25);
-  --bg: #08080f;
-  --surface: #0f0f1a;
-  --surface-2: #16162a;
-  --border: #1e1e35;
-  --text: #f0eeff;
-  --muted: #7a7a9a;
-  --font-graffiti: 'Bungee', system-ui, sans-serif;
-  --font-condensed: 'Barlow Condensed', system-ui, sans-serif;
-  --font-body: 'Barlow', system-ui, sans-serif;
+  --accent: #C4102A;          /* fills: buttons, active states */
+  --accent-text: #E14458;     /* accent on a dark ground; 4.97:1, readable at small sizes */
+  --accent-dim: #70020F;      /* the brand burgundy: fills and rails */
+  --accent-glow: rgba(196, 16, 42, 0.28);
+  --bg: #140206;
+  --surface: #1F050B;
+  --surface-2: #2C070F;
+  --border: #45101B;
+  --text: #FFDEE2;            /* pale pink */
+  --muted: #C08A93;
+  --on-accent: #FFF0F2;       /* text sitting on an accent fill */
+  --ok: #5FD68C;
+  --danger: #FF7A8A;
+  --scrim: rgba(20, 2, 6, 0.94);  /* sticky bars over the page */
+  --font-graffiti: 'Poppins', system-ui, sans-serif;
+  --font-condensed: 'Poppins', system-ui, sans-serif;
+  --font-body: 'Poppins', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -25,32 +36,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::selection { background: var(--orange); color: #000; }
+::selection { background: var(--accent); color: var(--text); }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--orange-dim); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--accent-dim); border-radius: 2px; }
 
+/* Display type: the heavy geometric weight the brand card uses. */
 .graffiti {
   font-family: var(--font-graffiti);
+  font-weight: 800;
   text-transform: uppercase;
-  line-height: 0.9;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
 }
 
+/* Labels and small caps. */
 .condensed {
   font-family: var(--font-condensed);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
-.glow-orange {
-  text-shadow: 0 0 40px var(--orange-glow), 0 0 80px rgba(168,85,247,0.1);
+.glow {
+  text-shadow: 0 0 40px var(--accent-glow), 0 0 90px rgba(112, 2, 15, 0.55);
 }
 
 .tag {
   display: inline-block;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--text);
   font-family: var(--font-condensed);
   font-weight: 700;
   font-size: 11px;
