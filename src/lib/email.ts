@@ -2,7 +2,28 @@ import { Resend } from "resend";
 import { SHOP } from "@/config/shop";
 import { googleCalendarLink, type CalendarEventData } from "@/lib/calendar";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Constructed lazily: `new Resend(undefined)` throws, which would fail the
+// production build (page-data collection imports this module) on a deploy
+// that has not set RESEND_API_KEY yet. Without a key we skip sending
+// instead, so bookings still save and the site still deploys.
+let client: Resend | null = null;
+
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  if (!client) client = new Resend(key);
+  return client;
+}
+
+/** Sends via Resend, or resolves to null when no API key is configured. */
+async function send(payload: Parameters<Resend["emails"]["send"]>[0]) {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[email] RESEND_API_KEY is not set — skipping send to", payload.to);
+    return null;
+  }
+  return resend.emails.send(payload);
+}
 
 export type BookingEmailData = {
   clientName: string;
@@ -19,7 +40,7 @@ export type BookingEmailData = {
 export async function sendOwnerNotification(data: BookingEmailData) {
   const calLink = data.calendarData ? googleCalendarLink(data.calendarData) : null;
 
-  await resend.emails.send({
+  await send({
     from: `${SHOP.name} Bookings <bookings@resend.dev>`,
     to: SHOP.ownerEmail,
     subject: `New Booking — ${data.serviceName} on ${data.date}`,
@@ -47,7 +68,7 @@ export async function sendOwnerNotification(data: BookingEmailData) {
 }
 
 export async function sendReminderEmail(data: BookingEmailData) {
-  await resend.emails.send({
+  await send({
     from: `${SHOP.name} <bookings@resend.dev>`,
     to: data.clientEmail,
     subject: `Reminder: Your ${SHOP.name} appointment is today`,
@@ -76,7 +97,7 @@ export async function sendReminderEmail(data: BookingEmailData) {
 }
 
 export async function sendClientConfirmation(data: BookingEmailData) {
-  await resend.emails.send({
+  await send({
     from: `${SHOP.name} <bookings@resend.dev>`,
     to: data.clientEmail,
     subject: `Your appointment at ${SHOP.name} is confirmed`,

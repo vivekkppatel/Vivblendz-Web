@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { ADMIN_PASSWORD } from "@/config/shop";
+import { isAdminAuthed } from "@/lib/adminAuth";
 import { supabase } from "@/lib/supabase";
 
 async function checkAuth() {
-  const cookieStore = await cookies();
-  return cookieStore.get("admin_auth")?.value === ADMIN_PASSWORD;
+  return isAdminAuthed();
 }
 
 export async function GET() {

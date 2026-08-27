@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { supabase, type Booking } from "@/lib/supabase";
 import { getShopSettings } from "@/lib/getSettings";
-import { SHOP, ADMIN_PASSWORD, SERVICES } from "@/config/shop";
+import { SHOP, SERVICES } from "@/config/shop";
+import { isAdminAuthed } from "@/lib/adminAuth";
 import { parseISO, isToday, isFuture } from "date-fns";
 import AdminLoginForm from "./LoginForm";
 import SettingsForm from "./SettingsForm";
@@ -26,8 +26,7 @@ function getPrice(serviceId: string): number {
 }
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const authed = cookieStore.get("admin_auth")?.value === ADMIN_PASSWORD;
+  const authed = await isAdminAuthed();
 
   if (!authed) {
     return <AdminLoginForm />;

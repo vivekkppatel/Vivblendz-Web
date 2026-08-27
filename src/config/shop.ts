@@ -98,7 +98,8 @@ export const SERVICES: Service[] = [
 ];
 
 // -------------------------------------------------------
-// Admin password — change this to something secure.
-// This protects /admin from public access.
+// Admin password lives in the ADMIN_PASSWORD environment variable and is
+// read through src/lib/adminAuth.ts. It is deliberately not defined here:
+// this repository is public, so any default would be a published
+// credential for /admin.
 // -------------------------------------------------------
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "vivblendz2024";
