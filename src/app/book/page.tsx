@@ -386,12 +386,6 @@ export default function BookPage() {
         )}
       </div>
 
-      {/* Recurring */}
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ fontFamily: "var(--font-condensed)", fontWeight: 700, fontSize: 12, letterSpacing: "0.1em", color: "var(--muted)" }}>RECURRING</p>
-        <p style={{ fontSize: 15 }}>Never</p>
-      </div>
-
       {/* Your Info */}
       <div ref={infoRef}><SectionHeader>YOUR INFORMATION</SectionHeader></div>
       {[
